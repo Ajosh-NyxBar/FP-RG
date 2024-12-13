@@ -1,22 +1,18 @@
 package service
 
 import (
-    "a21hc3NpZ25tZW50/model"
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "net/http"
-    "time"
-    "log"
-    "io/ioutil"
+	"a21hc3NpZ25tZW50/model"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"time"
 )
 
-type HTTPClient interface {
-    Do(req *http.Request) (*http.Response, error)
-}
-
 type AIService struct {
-    Client HTTPClient
+    Client *http.Client
 }
 
 func (s *AIService) AnalyzeData(table map[string][]string, query, token string) (string, error) {
@@ -34,7 +30,7 @@ func (s *AIService) AnalyzeData(table map[string][]string, query, token string) 
         return "", err
     }
 
-    req, err := http.NewRequest("POST", "https://api-inference.huggingface.co/models/google/tapas-large-finetuned-sqa", bytes.NewBuffer(requestBody))
+    req, err := http.NewRequest("POST", "https://api-inference.huggingface.co/models/google/tapas-large-finetuned-wtq", bytes.NewBuffer(requestBody))
     if err != nil {
         return "", err
     }
@@ -42,20 +38,14 @@ func (s *AIService) AnalyzeData(table map[string][]string, query, token string) 
     req.Header.Set("Authorization", "Bearer "+token)
     req.Header.Set("Content-Type", "application/json")
 
+    log.Printf("Payload: %s\n", string(requestBody))
     for retries := 0; retries < 3; retries++ {
         resp, err := s.Client.Do(req)
         if err != nil {
             log.Printf("Error making request to Hugging Face API: %v", err)
-            time.Sleep(5 * time.Second)
             continue
         }
         defer resp.Body.Close()
-
-        if resp.StatusCode == http.StatusServiceUnavailable {
-            log.Printf("Service unavailable, retrying...")
-            time.Sleep(5 * time.Second)
-            continue
-        }
 
         if resp.StatusCode != http.StatusOK {
             bodyBytes, _ := ioutil.ReadAll(resp.Body)

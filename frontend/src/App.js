@@ -11,39 +11,38 @@ function App() {
   const [file, setFile] = useState(null);
   const [csvQuery, setCsvQuery] = useState("");
   const [chatQuery, setChatQuery] = useState("");
-  const [response, setResponse] = useState("");
+  const [response, setResponse] = useState(""); // Set initial value to an empty string
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const selectedFile = e.target.files[0];
+    console.log("Selected file:", selectedFile);
+    setFile(selectedFile);
+  };
+
+  const handleCsvQueryChange = (e) => {
+    setCsvQuery(e.target.value);
+  };
+
+  const handleChatQueryChange = (e) => {
+    setChatQuery(e.target.value);
   };
 
   const handleUploadAndAnalyze = async () => {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("query", csvQuery); // Tambahkan query ke formData
 
     try {
-      const res = await axios.post('http://localhost:8080/upload', formData, {
+      const res = await axios.post('http://localhost:8080/analyze', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
       });
-      setResponse(res.data.answer);
+      console.log("Response:", res.data);
+      setResponse(res.data.answer); // Pastikan nilai response diatur dengan benar
     } catch (error) {
       console.error('Error uploading file:', error);
-    }
-  };
-
-  const handleCsvQuery = async () => {
-    try {
-      const res = await axios.post("http://localhost:8080/csv-query", { query: csvQuery }, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-      });
-      setResponse(res.data.answer);
-    } catch (error) {
-      console.error("Error querying CSV data:", error);
     }
   };
 
@@ -54,7 +53,8 @@ function App() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
       });
-      setResponse(res.data.answer);
+      console.log("Response:", res.data);
+      setResponse(res.data.answer); // Pastikan nilai response diatur dengan benar
     } catch (error) {
       console.error("Error querying chat:", error);
     }
@@ -67,11 +67,11 @@ function App() {
         <input
           type="text"
           value={csvQuery}
-          onChange={(e) => setCsvQuery(e.target.value)}
+          onChange={handleCsvQueryChange}
           placeholder="Question about CSV"
           className="p-2 mb-2 border border-gray-300 rounded-md w-full"
         />
-        <button onClick={handleCsvQuery} className="p-2 mb-2 text-white bg-green-600 rounded-md cursor-pointer">
+        <button onClick={handleUploadAndAnalyze} className="p-2 mb-2 text-white bg-green-600 rounded-md cursor-pointer">
           Chat About CSV
         </button>
       </div>
@@ -79,7 +79,7 @@ function App() {
         <input
           type="text"
           value={chatQuery}
-          onChange={(e) => setChatQuery(e.target.value)}
+          onChange={handleChatQueryChange}
           placeholder="Ask a question..."
           className="p-2 mb-2 border border-gray-300 rounded-md w-full"
         />
@@ -94,11 +94,11 @@ function App() {
           animate={{ opacity: 1 }}
           transition={{ duration: 2, staggerChildren: 0.1 }}
         >
-          {response.split("").map((char, index) => (
+          {response ? response.split("").map((char, index) => (
             <motion.span key={index} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.005 }}>
               {char}
             </motion.span>
-          ))}
+          )) : "No response yet"}
         </motion.p>
       </div>
     </div>

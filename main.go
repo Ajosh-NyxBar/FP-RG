@@ -57,6 +57,7 @@ func main() {
 	protected.HandleFunc("/upload", handler.UploadHandler).Methods("POST")
 	protected.HandleFunc("/csv-query", handler.CSVQueryHandler).Methods("POST")
 	protected.HandleFunc("/chat", handler.ChatHandler).Methods("POST")
+	protected.HandleFunc("/analyze", handler.AnalyzeHandler).Methods("POST") // Tambahkan route untuk AnalyzeHandler
 
 	corsHandler := cors.New(cors.Options{ 
 		AllowedOrigins: []string{"http://localhost:3000"},

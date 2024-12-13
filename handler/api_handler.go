@@ -170,7 +170,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
         log.Println("Error retrieving file:", err)
         http.Error(w, "Failed to retrieve file", http.StatusBadRequest)
         return
-    }   
+    }
     defer file.Close()
 
     fileContent, err := ioutil.ReadAll(file)
@@ -272,5 +272,51 @@ func ChatHandler(w http.ResponseWriter, r *http.Request) {
     session.Save(r, w)
 
     response := map[string]string{"status": "success", "answer": answer.GeneratedText}
+    json.NewEncoder(w).Encode(response)
+}
+
+func AnalyzeHandler(w http.ResponseWriter, r *http.Request) {
+    token := os.Getenv("HUGGINGFACE_TOKEN")
+    if token == "" {
+        http.Error(w, "HUGGINGFACE_TOKEN is not set", http.StatusInternalServerError)
+        return
+    }
+
+    err := r.ParseMultipartForm(1024)
+    if err != nil {
+        http.Error(w, "Unable to parse form", http.StatusBadRequest)
+        return
+    }
+
+    file, _, err := r.FormFile("file")
+    if err != nil {
+        http.Error(w, "Failed to read file", http.StatusBadRequest)
+        return
+    }
+    defer file.Close()
+
+    content, err := ioutil.ReadAll(file)
+    if err != nil {
+        http.Error(w, "Unable to read file content", http.StatusInternalServerError)
+        return
+    }
+
+    resultFile, err := fileService.ProcessFile(string(content))
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    question := r.FormValue("query")
+
+    answer, err := aiService.AnalyzeData(resultFile, question, token)
+    if err != nil {
+        log.Println("Error from AnalyzeData:", err)
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    response := map[string]string{"status": "success", "answer": answer}
+    w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(response)
 }
