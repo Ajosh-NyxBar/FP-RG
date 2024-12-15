@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
@@ -11,11 +11,15 @@ function App() {
   const [file, setFile] = useState(null);
   const [csvQuery, setCsvQuery] = useState("");
   const [chatQuery, setChatQuery] = useState("");
-  const [response, setResponse] = useState(""); // Set initial value to an empty string
+  const [chatHistory, setChatHistory] = useState([]);
+
+  useEffect(() => {
+    const savedChatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
+    setChatHistory(savedChatHistory);
+  }, []);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
-    console.log("Selected file:", selectedFile);
     setFile(selectedFile);
   };
 
@@ -23,14 +27,10 @@ function App() {
     setCsvQuery(e.target.value);
   };
 
-  const handleChatQueryChange = (e) => {
-    setChatQuery(e.target.value);
-  };
-
   const handleUploadAndAnalyze = async () => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("query", csvQuery); // Tambahkan query ke formData
+    formData.append("query", csvQuery);
 
     try {
       const res = await axios.post('http://localhost:8080/analyze', formData, {
@@ -39,8 +39,9 @@ function App() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
       });
-      console.log("Response:", res.data);
-      setResponse(res.data.answer); // Pastikan nilai response diatur dengan benar
+      const newChatHistory = [...chatHistory, { sender: "user", message: csvQuery }, { sender: "ai", message: res.data.answer }];
+      setChatHistory(newChatHistory);
+      localStorage.setItem("chatHistory", JSON.stringify(newChatHistory));
     } catch (error) {
       console.error('Error uploading file:', error);
     }
@@ -53,11 +54,17 @@ function App() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
       });
-      console.log("Response:", res.data);
-      setResponse(res.data.answer); // Pastikan nilai response diatur dengan benar
+      const newChatHistory = [...chatHistory, { sender: "user", message: chatQuery }, { sender: "ai", message: res.data.answer }];
+      setChatHistory(newChatHistory);
+      localStorage.setItem("chatHistory", JSON.stringify(newChatHistory));
     } catch (error) {
       console.error("Error querying chat:", error);
     }
+  };
+
+  const handleClearChatHistory = () => {
+    setChatHistory([]);
+    localStorage.removeItem("chatHistory");
   };
 
   const ProtectedComponent = () => (
@@ -66,9 +73,9 @@ function App() {
         <input type="file" onChange={handleFileChange} className="p-2 mb-2 border border-gray-300 rounded-md" />
         <input
           type="text"
+          placeholder="Question about CSV"
           value={csvQuery}
           onChange={handleCsvQueryChange}
-          placeholder="Question about CSV"
           className="p-2 mb-2 border border-gray-300 rounded-md w-full"
         />
         <button onClick={handleUploadAndAnalyze} className="p-2 mb-2 text-white bg-green-600 rounded-md cursor-pointer">
@@ -78,8 +85,7 @@ function App() {
       <div className="mb-5">
         <input
           type="text"
-          value={chatQuery}
-          onChange={handleChatQueryChange}
+          onChange={(e) => setChatQuery(e.target.value)}
           placeholder="Ask a question..."
           className="p-2 mb-2 border border-gray-300 rounded-md w-full"
         />
@@ -87,19 +93,26 @@ function App() {
           Chat
         </button>
       </div>
-      <div className="mt-5 p-2 border border-gray-300 rounded-md bg-gray-100">
-        <h2 className="text-lg font-bold">Response</h2>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 2, staggerChildren: 0.1 }}
-        >
-          {response ? response.split("").map((char, index) => (
-            <motion.span key={index} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.005 }}>
-              {char}
-            </motion.span>
-          )) : "No response yet"}
-        </motion.p>
+      <div className="mt-5 p-2 border border-gray-300 rounded-md bg-gray-100 w-full">
+        <h2 className="text-lg font-bold">Chat History</h2>
+        <button onClick={handleClearChatHistory} className="p-2 mb-2 text-white bg-red-600 rounded-md cursor-pointer">
+          Clear Chat History
+        </button>
+        <div className="chat-history">
+          {chatHistory.map((chat, index) => (
+            <motion.div
+              key={index}
+              className={`chat-message ${chat.sender === "user" ? "text-right" : "text-left"}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <p className={`p-2 mb-2 ${chat.sender === "user" ? "bg-blue-200" : "bg-gray-200"} rounded-md inline-block`}>
+                {chat.message}
+              </p>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   );

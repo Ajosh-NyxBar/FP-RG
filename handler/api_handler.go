@@ -320,3 +320,40 @@ func AnalyzeHandler(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(response)
 }
+
+func GroqHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        Query string `json:"query"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "Invalid request payload", http.StatusBadRequest)
+        return
+    }
+
+    session := getSession(r)
+    context, ok := session.Values["context"].(string)
+    if !ok {
+        context = ""
+    }
+
+    loginToken := r.Header.Get("Authorization")
+    if loginToken == "" {
+        http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+        return
+    }
+    loginToken = strings.TrimPrefix(loginToken, "Bearer ")
+
+    groqService := &service.GroqService{Client: &http.Client{}}
+    answer, err := groqService.ProcessGroqQuery(context + " " + req.Query, loginToken)
+    if err != nil {
+        log.Println("Error processing GROQ query:", err)
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    session.Values["context"] = context + " " + req.Query + " " + answer
+    session.Save(r, w)
+
+    response := map[string]string{"status": "success", "answer": answer}
+    json.NewEncoder(w).Encode(response)
+}
