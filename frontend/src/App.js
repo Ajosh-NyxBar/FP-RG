@@ -7,8 +7,8 @@ import { AuthProvider } from "./Routes/AuthContext";
 import ProtectedRoute from "./Routes/ProtectedRoutes";
 import Chat from "./components/Chat";
 import ChatImg from "./components/ChatImg";
-import Sidebar from "./components/sidebar/Sidebar"; // Import Sidebar
-import Transition from "./components/Transition"; // Import Transition
+import Sidebar from "./components/sidebar/Sidebar";
+import Transition from "./components/Transition"; 
 import Logout from "./auth/Logout";
 
 function App() {

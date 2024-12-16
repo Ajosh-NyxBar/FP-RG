@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import Swal from 'sweetalert2';
 
 const variants = {
   open: {
@@ -28,10 +29,28 @@ const itemVariants = {
 };
 
 const Links = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You will be logged out!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, logout!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate('/logout');
+      }
+    });
+  };
+
   const items = [
     { name: "Home", path: "/" },
     { name: "Analyze Image", path: "/analyze-image" },
-    { name: "Logout", path: "/logout" },
+    { name: "Logout", path: "/logout", action: handleLogout },
   ];
 
   return (
@@ -43,7 +62,11 @@ const Links = () => {
           whileHover={{ scale: 1.25 }}
           whileTap={{ scale: 0.95 }}
         >
-          <Link to={item.path}>{item.name}</Link>
+          {item.action ? (
+            <span onClick={item.action}>{item.name}</span>
+          ) : (
+            <Link to={item.path}>{item.name}</Link>
+          )}
         </motion.div>
       ))}
     </motion.div>

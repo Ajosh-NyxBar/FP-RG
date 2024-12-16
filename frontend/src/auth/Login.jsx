@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Routes/AuthContext";
 import { FcGoogle } from "react-icons/fc";
 import { signInWithPopup, auth, provider } from "../config";
+import Swal from 'sweetalert2';
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState(""); // State for message
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -34,20 +34,21 @@ const Login = () => {
           console.log("Login successful:", data);
           localStorage.setItem("token", data.token); // Save token to localStorage
           login(); // Set authentication state
-          navigate("/"); // Redirect to root
-          setMessage("Login successful"); // Set success message
+          Swal.fire('Success', 'Login successful', 'success').then(() => {
+            navigate("/"); // Redirect to root
+          });
         } else {
           console.error("Login failed:", data);
-          setMessage("Login failed"); // Set error message
+          Swal.fire('Error', 'Login failed', 'error');
         }
       } catch (jsonError) {
         console.error("Failed to parse JSON:", jsonError);
         console.error("Server response:", text);
-        setMessage("Login failed"); // Set error message
+        Swal.fire('Error', 'Login failed', 'error');
       }
     } catch (error) {
       console.error("Error:", error);
-      setMessage("Login failed"); // Set error message
+      Swal.fire('Error', 'Login failed', 'error');
     }
   };
 
@@ -61,12 +62,13 @@ const Login = () => {
       const user = result.user;
       const token = await user.getIdToken();
       localStorage.setItem("token", token); // Save token to localStorage
-      login(); // Set authentication state
-      navigate("/"); // Redirect to root
-      setMessage("Login successful"); // Set success message
+      login(); 
+      Swal.fire('Success', 'Login successful', 'success').then(() => {
+        navigate("/"); 
+      });
     } catch (error) {
       console.error("Error during Google login:", error);
-      setMessage("Login failed"); // Set error message
+      Swal.fire('Error', 'Login failed', 'error');
     }
   };
 
@@ -105,7 +107,6 @@ const Login = () => {
           </button>
           <p>You don't have an account? <button type="button" className="text-blue-500" onClick={handleRegister}>Register</button> here</p>
         </form>
-        {message && <p className="mt-4 text-center text-red-500">{message}</p>} {/* Display message */}
         <div className="flex items-center justify-center mt-4">
           <button
             onClick={handleGoogleLogin}
