@@ -8,19 +8,13 @@ import (
 	"a21hc3NpZ25tZW50/database"
 	"a21hc3NpZ25tZW50/handler"
 	"a21hc3NpZ25tZW50/middleware"
-	"a21hc3NpZ25tZW50/service"
-
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 )
 
-var fileService = &service.FileService{}
-var aiService = &service.AIService{Client: &http.Client{}}
 var store = sessions.NewCookieStore([]byte("my-key"))
-var processedData map[string][]string
-var authService = service.NewAuthService()
 
 func getSession(r *http.Request) *sessions.Session {
 	session, _ := store.Get(r, "chat-session")
@@ -57,18 +51,16 @@ func main() {
 	protected.HandleFunc("/upload", handler.UploadHandler).Methods("POST")
 	protected.HandleFunc("/csv-query", handler.CSVQueryHandler).Methods("POST")
 	protected.HandleFunc("/chat", handler.GroqHandler).Methods("POST")
-	protected.HandleFunc("/analyze", handler.AnalyzeHandler).Methods("POST") 
+	protected.HandleFunc("/analyze", handler.AnalyzeHandler).Methods("POST")
+	protected.HandleFunc("/analyze-image", handler.AnalyzeImageHandler).Methods("POST") 
 
-	corsHandler := cors.New(cors.Options{ 
-		AllowedOrigins: []string{"http://localhost:3000"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"Content-Type", "Authorization"},
-	}).Handler(router)
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowCredentials: true,
+	})
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	log.Printf("Server running on port %s\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, corsHandler))
+	handler := c.Handler(router)
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }

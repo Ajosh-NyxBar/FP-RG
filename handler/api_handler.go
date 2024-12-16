@@ -5,6 +5,7 @@ import (
     "context"
     "encoding/json"
     "fmt"
+    // "io"
     "io/ioutil"
     "log"
     "net/http"
@@ -277,7 +278,7 @@ func ChatHandler(w http.ResponseWriter, r *http.Request) {
 
 func AnalyzeHandler(w http.ResponseWriter, r *http.Request) {
     token := os.Getenv("HUGGINGFACE_TOKEN")
-    if token == "" {
+    if (token == "") {
         http.Error(w, "HUGGINGFACE_TOKEN is not set", http.StatusInternalServerError)
         return
     }
@@ -353,6 +354,32 @@ func GroqHandler(w http.ResponseWriter, r *http.Request) {
 
     session.Values["context"] = context + " " + req.Query + " " + answer
     session.Save(r, w)
+
+    response := map[string]string{"status": "success", "answer": answer}
+    json.NewEncoder(w).Encode(response)
+}
+
+func AnalyzeImageHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct {
+        ImageURL string `json:"image_url"`
+        Prompt   string `json:"prompt"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "Invalid request payload", http.StatusBadRequest)
+        return
+    }
+
+    token := os.Getenv("HUGGINGFACE_TOKEN")
+    if token == "" {
+        http.Error(w, "HUGGINGFACE_TOKEN is not set", http.StatusInternalServerError)
+        return
+    }
+
+    answer, err := aiService.AnalyzeImage(req.ImageURL, req.Prompt, token)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 
     response := map[string]string{"status": "success", "answer": answer}
     json.NewEncoder(w).Encode(response)

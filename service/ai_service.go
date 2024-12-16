@@ -113,3 +113,49 @@ func (s *AIService) ChatWithAI(context, query, token string) (model.ChatResponse
 
     return model.ChatResponse{}, fmt.Errorf("failed to get response from AI model after several retries")
 }
+
+func (s *AIService) AnalyzeImage(imageURL, prompt, token string) (string, error) {
+    requestBody, err := json.Marshal(map[string]interface{}{
+        "model": "meta-llama/Llama-3.2-11B-Vision-Instruct",
+        "inputs": fmt.Sprintf("%s %s", prompt, imageURL),
+        "parameters": map[string]interface{}{
+            "max_tokens":  500,
+            "temperature": 0.7,
+        },
+        "stream": false,
+    })
+    if err != nil {
+        return "", err
+    }
+
+    req, err := http.NewRequest("POST", "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-11B-Vision-Instruct", bytes.NewBuffer(requestBody))
+    if err != nil {
+        return "", err
+    }
+
+    req.Header.Set("Authorization", "Bearer "+token)
+    req.Header.Set("Content-Type", "application/json")
+
+    resp, err := s.Client.Do(req)
+    if err != nil {
+        return "", err
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        return "", fmt.Errorf("failed to get response from AI model: %s", resp.Status)
+    }
+
+    var response []struct {
+        GeneratedText string `json:"generated_text"`
+    }
+    if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+        return "", err
+    }
+
+    if len(response) == 0 {
+        return "", fmt.Errorf("no response from AI model")
+    }
+
+    return response[0].GeneratedText, nil
+}
