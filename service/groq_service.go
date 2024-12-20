@@ -74,7 +74,7 @@ func (s *GroqService) RequestToGroq(prompt string) (string, error) {
 func (s *GroqService) ProcessGroqQuery(query, token string) (string, error) {
 	apiKey := os.Getenv("VITE_GROQ_API_KEY")
 	if apiKey == "" {
-		apiKey = "mock-api-key" // Set a mock API key for testing
+		apiKey = "mock-api-key" 
 	}
 
 	requestBody, err := json.Marshal(map[string]interface{}{

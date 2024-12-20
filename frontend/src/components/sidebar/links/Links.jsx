@@ -50,6 +50,7 @@ const Links = () => {
   const items = [
     { name: "Home", path: "/" },
     { name: "Analyze Image", path: "/analyze-image" },
+    { name: "Chat Analyze", path: "/chat-analyze" },
     { name: "Logout", path: "/logout", action: handleLogout },
   ];
 
